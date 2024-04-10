@@ -13,7 +13,7 @@ SIM800::SIM800(HardwareSerial *gsm,uint32_t baudRate = 115200, uint8_t rx_pin = 
 String SIM800::sendCmd(char* command) {
 	
 	if (_logger){
-		Serial.print(" SIM800 command:");
+		Serial.print(" SIM800 >>> :");
 		Serial.println(command);
 	}
 	
@@ -59,41 +59,66 @@ bool SIM800::sendSMS(const char *number, const char *text) {
 	
 }
 
-String SIM800::readSMS(uint8_t _count) {
+bool SIM800::readSMS(uint8_t _count) {
 	
-	//AT+CMGR=<index>[,<mode>]
 	char _cmd[25] = { 0 };
 	snprintf(_cmd, sizeof(_cmd), "AT+CMGR=%d\r", _count);
+	sendCmd(_cmd);	
+	
+	if (_buffer.indexOf("ERROR") != -1) {
+		return false;
+		}
+		
+	int8_t _start = _buffer.indexOf("READ");
+			
+    SIM800::Telephone = _buffer.substring(_start+7, _start+19);
+	
+	int8_t _startSMS = _buffer.indexOf("\r\n")+2;
+	int8_t _endSMS = _buffer.indexOf("\r\n",_startSMS);
+	
+	SIM800::SMS = _buffer.substring(_startSMS, _endSMS);
+	
 
-    sendCmd(_cmd);	
-	return _buffer;
+ /*+CMGR: "REC READ","+79126601000",,"24/04/09,16:54:53+20"
+	19:45:23.309 -> \r\nTsttste
+	19:45:23.309 -> \r
+	19:45:23.309 -> \r\nOK
+  */
+   
+	return true;
 }
 
+
+void SIM800::tick() {
+	_readSerial(10);
+}
 
 
 void SIM800::deleteAllSMS() {
 	sendCmd("AT+CMGDA=\"DEL ALL\"\r");
 }
 
+String SIM800::listAllSMS() {
+	sendCmd("AT+CMGL=\"ALL\"");
+	return _buffer;	
+}
+
+
 
 uint8_t SIM800::isNewSMS() {
-	sendCmd("AT+CMGL=\"ALL\"");
-	//_readSerial(30000);
-	
-	Serial.println("isNewSMS():");
-	_buffer = sendCmd("AT+CPMS?");
-	
+    _buffer = sendCmd("AT+CPMS?");
+	//if (_buffer.indexOf)
 	int8_t _start = _buffer.indexOf("+CPMS:");
-	Serial.print("_start = "); 
-	Serial.println(_start);
+	//Serial.print("_start = "); 
+	//Serial.println(_start);
 	
 	// Если нашли ответ:
 	// +CPMS: "ME",11,100,"ME",11,100,"ME",11,100
 	if (_start != -1) {
 		_start += 12;
 		int8_t _finish = _buffer.indexOf(",",_start + 1);
-		Serial.print("_finish = ");
-		Serial.println(_finish);
+		//Serial.print("_finish = ");
+		//Serial.println(_finish);
 		String _num = _buffer.substring(_start, _finish);
 		//Serial.println(_num);
 		return _num.toInt();
@@ -111,12 +136,16 @@ String SIM800::_readSerial(uint64_t timeOut)
 		delay(10);
 	}
 
-	if(_hardwareSerial->available()) { _buffer = _hardwareSerial->readString(); }
-	_buffer.trim();
+	if(_hardwareSerial->available()) { 
+		_buffer = _hardwareSerial->readString(); 
+		_buffer.trim();
 		if(_logger) {
- 			Serial.print(" SIM800 answer [");
+ 			Serial.print(" SIM800 <<< [");
  			Serial.print(_buffer);
  			Serial.println("]");
 		}
 	return _buffer;
+
+	}
+	return "";	
 }

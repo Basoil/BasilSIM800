@@ -7,16 +7,20 @@
 #######################################
 
 SIM800		KEYWORD1
-
+Telephone	KEYWORD1
+SMS 		KEYWORD1
 
 #######################################
 # Methods and Functions (KEYWORD2)
 #######################################
 
-init		KEYWORD2
-sendSMS		KEYWORD2
-readSMS		KEYWORD2
-
+init			KEYWORD2
+sendSMS			KEYWORD2
+readSMS			KEYWORD2
+listAllSMS		KEYWORD2
+tick			KEYWORD2
+deleteAllSMS	KEYWORD2
+isNewSMS		KEYWORD2
 
 #######################################
 # Constants (LITERAL1)
